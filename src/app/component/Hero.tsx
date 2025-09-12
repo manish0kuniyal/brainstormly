@@ -1,12 +1,9 @@
-// components/Hero.tsx
 "use client";
-import { useThemeStore } from "../store/Theme";
 import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export function Hero() {
-  const dark = useThemeStore((s) => s.dark);
   const [idea, setIdea] = useState("");
   const router = useRouter();
 
@@ -16,49 +13,32 @@ export function Hero() {
   };
 
   return (
-    <section
-      className={`flex flex-col items-center justify-center text-center py-24 px-6 transition-colors ${
-        dark ? "bg-black" : "bg-gradient-to-b from-indigo-50 to-white"
-      }`}
-    >
-      <div className="max-w-3xl mx-auto px-4">
-        <h2
-          className={`text-5xl font-extrabold mb-6 ${
-            dark ? "text-gray-100" : "text-gray-800"
-          }`}
-        >
+    <section className="relative flex flex-col items-center justify-center text-center py-28 mt-4 px-6 text-gray-100">
+      <div className="max-w-4xl mx-auto px-4">
+        {/* Bigger Heading without gradient */}
+        <h1 className="text-6xl md:text-7xl font-extrabold mb-8 leading-tight text-gray-100">
           Turn Ideas Into Reality 🚀
-        </h2>
-        <p
-          className={`text-lg mb-8 ${
-            dark ? "text-gray-300" : "text-gray-600"
-          }`}
-        >
-          A modern workspace to brainstorm, craft, and shape your next big project
-          idea.
+        </h1>
+
+        {/* Larger Subtext */}
+        <p className="text-xl md:text-2xl mb-10 text-gray-300">
+          A modern workspace to brainstorm, craft, and shape your next big project idea.
         </p>
 
-        <div className="flex w-full max-w-3xl mb-6">
+        {/* Enlarged Input + Button */}
+        <div className="flex w-full max-w-3xl mx-auto mb-8 shadow-xl">
           <input
             type="text"
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
             placeholder="I want to create a Cake Shop 🎂"
-            className={`w-full px-4 py-3 rounded-l-2xl border text-lg focus:outline-none shadow-sm ${
-              dark
-                ? "bg-gray-800 border-gray-700 text-white placeholder-gray-400"
-                : "bg-white border-gray-300 text-gray-800 placeholder-gray-500"
-            }`}
+            className="w-full px-6 py-4 rounded-l-2xl border text-lg md:text-xl bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:outline-none"
           />
           <button
             onClick={handleGenerate}
-            className={`flex items-center justify-center px-6 py-3 text-lg font-medium rounded-r-2xl shadow-lg transition ${
-              dark
-                ? "bg-indigo-500 hover:bg-indigo-600 text-white"
-                : "bg-indigo-600 hover:bg-indigo-700 text-white"
-            }`}
+            className="flex items-center justify-center px-8 py-4 text-lg md:text-xl font-semibold rounded-r-2xl bg-indigo-500 hover:bg-indigo-600 text-white transition"
           >
-            Generate <ArrowRight className="ml-2 h-5 w-5" />
+            Generate <ArrowRight className="ml-2 h-6 w-6" />
           </button>
         </div>
       </div>

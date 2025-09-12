@@ -25,31 +25,20 @@ export function FeatureSection() {
   const dark = useThemeStore((s) => s.dark);
 
   return (
-    <section
-      className={`py-20 px-6 transition-colors ${
-        dark ? "bg-black" : "bg-gray-50"
-      }`}
-    >
-      <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
-        {features.map((f, i) => (
-          <div
-            key={i}
-            className={`p-6 rounded-2xl shadow-md hover:shadow-lg transition ${
-              dark ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
-            }`}
-          >
-            <f.icon
-              className={`h-10 w-10 mb-4 ${
-                dark ? "text-indigo-400" : "text-indigo-600"
-              }`}
-            />
-            <h3 className="text-xl font-semibold mb-2">{f.title}</h3>
-            <p className={`${dark ? "text-gray-300" : "text-gray-600"}`}>
-              {f.desc}
-            </p>
-          </div>
-        ))}
+   <section className="py-20 px-6 ">
+  <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-8">
+    {features.map((f, i) => (
+      <div
+        key={i}
+        className="p-6 rounded-2xl shadow-md hover:shadow-lg bg-gray-800 text-gray-100"
+      >
+        <f.icon className="h-10 w-10 mb-4 text-indigo-400" />
+        <h3 className="text-xl font-semibold mb-2">{f.title}</h3>
+        <p className="text-gray-300">{f.desc}</p>
       </div>
-    </section>
+    ))}
+  </div>
+</section>
+
   );
 }

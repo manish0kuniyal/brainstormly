@@ -1,91 +1,132 @@
-// /app/api/brand/suggest/route.ts
+// app/api/brand/suggest/route.ts
+// Server route (Next.js app router) — uses @google/generative-ai SDK
+// - Requires: GEMINI_API_KEY in server env (do NOT expose to client)
+// - Returns robust JSON with brand suggestions, themes, fonts, business setup, tech stack, and feature breakdown with time estimates
+
 import { NextRequest } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const runtime = "nodejs";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const API_KEY = process.env.GEMINI_API_KEY;
+if (!API_KEY) {
+  throw new Error("GEMINI_API_KEY environment variable is required for /api/brand/suggest");
+}
 
-// 🔑 simple in-memory cache (resets on server restart)
+const genAI = new GoogleGenerativeAI(API_KEY);
+const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
 const cache = new Map<string, any>();
 
-type Suggestion = { name: string; motto: string };
-type ApiResponse = { suggestions: Suggestion[] };
-
-function extractJson(text: string): ApiResponse {
+function extractJsonFromText(text: string): any {
   try {
-    const parsed = JSON.parse(text);
-    if (parsed?.suggestions) return parsed;
+    return JSON.parse(text);
   } catch {}
+
   const codeBlock = text.match(/```json\s*([\s\S]*?)```/i)?.[1];
   if (codeBlock) {
     try {
-      const parsed = JSON.parse(codeBlock);
-      if (parsed?.suggestions) return parsed;
+      return JSON.parse(codeBlock);
     } catch {}
   }
-  const start = text.indexOf("[");
-  const end = text.lastIndexOf("]");
-  if (start !== -1 && end !== -1) {
+
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1) {
+    const maybe = text.slice(firstBrace, lastBrace + 1);
     try {
-      const arr = JSON.parse(text.slice(start, end + 1));
-      return { suggestions: arr };
+      return JSON.parse(maybe);
     } catch {}
   }
-  return { suggestions: [] };
+
+  return {};
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const { idea, count = 10, language = "en", styleHints = [] } = await req.json();
+    const body = await request.json();
+    const idea = (body.idea || "").toString().trim();
+    const language = body.language || "en";
+    const styleHints = Array.isArray(body.styleHints) ? body.styleHints : [];
 
-    if (!idea || typeof idea !== "string") {
+    if (!idea) {
       return new Response(JSON.stringify({ error: "idea is required" }), { status: 400 });
     }
 
-    // ✅ check cache first
     if (cache.has(idea)) {
-      return Response.json(cache.get(idea));
+      return new Response(JSON.stringify(cache.get(idea)), {
+        headers: { "Cache-Control": "no-store", "Content-Type": "application/json" },
+      });
     }
 
-    const prompt = `
-You are a world-class brand naming strategist.
-Given the brand/app idea below, propose ${count} creative, short, easy-to-spell brand names.
-For each name, also write a crisp, catchy motto (tagline) in ${language}.
-Avoid trademarked names, avoid profanity, avoid personal data, avoid sensitive topics.
+const prompt = `You are a world-class brand strategist and startup advisor.
 
-Idea:
-${idea}
+Given the brand/app idea below, generate STRICT JSON only (no extra commentary). Use only double quotes.
 
-Style hints (optional): ${Array.isArray(styleHints) ? styleHints.join(", ") : ""}
+Requirements:
+- Suggest 2 to 3 creative, short, easy-to-spell brand names with mottos.
+- Suggest a fitting color theme (5 hex colors).
+- Suggest 2 fonts (Google Fonts preferred).
+- Suggest an investmentRange for setting up this business online.
+- Suggest a recommended techStack (list of frameworks, tools, services). Always include some AI integration in the tech stack.
+- Suggest a list of must-have features (breakdown of the app to build). Next to each feature also include the approximate time the user might devote to building it.
+- Suggest 2–3 key competitors in the same market (with short notes on differentiation).
+- Suggest a launchRoadmap: 3–5 phases (like MVP → Beta → Full Launch), each with goals & rough time estimates.
 
-Rules:
-- Max 2 words per name
-- Prefer .com suitability (no hyphens, no numbers)
-- Make the motto <= 8 words
-- All output must be valid JSON with this exact shape:
+Idea: ${idea}
 
+Style hints: ${JSON.stringify(styleHints)}
+Language: ${language}
+
+JSON schema example:
 {
+  "idea": "Cake Shop",
+  "themeName": "Playful",
+  "colors": {
+    "primary": "#FF6B6B",
+    "secondary": "#FFD93D",
+    "accent": "#6BCB77",
+    "background": "#FFFFFF",
+    "muted": "#F7F7F7"
+  },
+  "fonts": { "primary": "Poppins", "secondary": "Lora", "fallbacks": ["system-ui", "sans-serif"] },
   "suggestions": [
-    { "name": "NameOne", "motto": "Short catchy motto" },
-    { "name": "NameTwo", "motto": "Another short motto" }
-  ]
-}
-    `.trim();
+    { "name": "SweetSlice", "motto": "Bite into happiness" }
+  ],
+  "businessSetup": {
+    "investmentRange": "$5k-$20k",
+    "techStack": ["Next.js", "TailwindCSS", "Firebase", "Stripe", "OpenAI API"],
+    "features": [
+      { "name": "User Authentication", "timeEstimate": "1 week" },
+      { "name": "Product Catalog", "timeEstimate": "2 weeks" },
+      { "name": "Payments", "timeEstimate": "1 week" }
+    ]
+  },
+  "competitors": [
+    { "name": "CakeZone", "note": "Focuses on bulk orders" },
+    { "name": "BakeHub", "note": "Strong delivery network" }
+  ],
+    { "phase": "MVP", "goals": "Basic storefront + payments", "timeEstimate": "1 month" },
+    { "phase": "Beta", "goals": "Expand features, small user base", "timeEstimate": "2 months" },
+    { "phase": "Full Launch", "goals": "Marketing + scale infra", "timeEstimate": "3 months" }
+  ],
+  "explanations": "Why these names, colors, fonts, and tech choices suit the idea"
+}`;
+
 
     const result = await model.generateContent(prompt);
     const text = result.response.text();
-    const json = extractJson(text);
+    const parsed = extractJsonFromText(text);
 
-    // ✅ save to cache
-    cache.set(idea, json);
+    cache.set(idea, parsed);
 
-    return Response.json(json, {
-      headers: { "Cache-Control": "no-store" },
+    return new Response(JSON.stringify(parsed), {
+      status: 200,
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
   } catch (err: any) {
-    console.error(err);
-    return new Response(JSON.stringify({ error: "Internal Server Error" }), { status: 500 });
+    console.error("/api/brand/suggest error:", err);
+    return new Response(JSON.stringify({ error: err?.message || "Internal Server Error" }), { status: 500 });
   }
 }
