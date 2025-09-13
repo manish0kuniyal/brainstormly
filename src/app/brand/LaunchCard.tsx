@@ -82,8 +82,7 @@ function splitGoalsIntoList(goals: string | string[]): string[] {
   if (Array.isArray(goals)) {
     return goals.map((g) => g.trim()).filter(Boolean).slice(0, 4);
   }
-
-  let text = goals.trim();
+const text = goals.trim();
   // If the string contains numbered bullets like "1. ... 2. ...", split on numbers
   if (/\d+\./.test(text)) {
     const parts = text.split(/\d+\.\s*/).map((p) => p.trim()).filter(Boolean);

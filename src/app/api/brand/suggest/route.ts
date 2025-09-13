@@ -1,8 +1,4 @@
-// app/api/brand/suggest/route.ts
-// Server route (Next.js app router) — uses @google/generative-ai SDK
-// - Requires: GEMINI_API_KEY in server env (do NOT expose to client)
-// - Returns robust JSON with brand suggestions, themes, fonts, business setup, tech stack, and feature breakdown with time estimates
-
+// src/app/api/brand/suggest/route.ts
 import { NextRequest } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -17,27 +13,36 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
-const cache = new Map<string, any>();
+const cache = new Map<string, unknown>();
 
-function extractJsonFromText(text: string): any {
+function tryParseJson(text: string): unknown {
+  // Try direct parse
   try {
     return JSON.parse(text);
-  } catch {}
+  } catch {
+    /* fallthrough */
+  }
 
+  // Try code block extraction
   const codeBlock = text.match(/```json\s*([\s\S]*?)```/i)?.[1];
   if (codeBlock) {
     try {
       return JSON.parse(codeBlock);
-    } catch {}
+    } catch {
+      /* fallthrough */
+    }
   }
 
+  // Try to locate first and last braces
   const firstBrace = text.indexOf("{");
   const lastBrace = text.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace !== -1) {
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
     const maybe = text.slice(firstBrace, lastBrace + 1);
     try {
       return JSON.parse(maybe);
-    } catch {}
+    } catch {
+      /* fallthrough */
+    }
   }
 
   return {};
@@ -46,21 +51,23 @@ function extractJsonFromText(text: string): any {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const idea = (body.idea || "").toString().trim();
-    const language = body.language || "en";
-    const styleHints = Array.isArray(body.styleHints) ? body.styleHints : [];
+    const ideaRaw = (body?.idea ?? "").toString();
+    const idea = ideaRaw.trim();
+    const language = body?.language ?? "en";
+    const styleHints = Array.isArray(body?.styleHints) ? body.styleHints : [];
 
     if (!idea) {
       return new Response(JSON.stringify({ error: "idea is required" }), { status: 400 });
     }
 
     if (cache.has(idea)) {
-      return new Response(JSON.stringify(cache.get(idea)), {
+      const cached = cache.get(idea) as unknown;
+      return new Response(JSON.stringify(cached), {
         headers: { "Cache-Control": "no-store", "Content-Type": "application/json" },
       });
     }
 
-const prompt = `You are a world-class brand strategist and startup advisor.
+    const prompt = `You are a world-class brand strategist and startup advisor.
 
 Given the brand/app idea below, generate STRICT JSON only (no extra commentary). Use only double quotes.
 
@@ -107,6 +114,7 @@ JSON schema example:
     { "name": "CakeZone", "note": "Focuses on bulk orders" },
     { "name": "BakeHub", "note": "Strong delivery network" }
   ],
+  "launchRoadmap": [
     { "phase": "MVP", "goals": "Basic storefront + payments", "timeEstimate": "1 month" },
     { "phase": "Beta", "goals": "Expand features, small user base", "timeEstimate": "2 months" },
     { "phase": "Full Launch", "goals": "Marketing + scale infra", "timeEstimate": "3 months" }
@@ -114,19 +122,36 @@ JSON schema example:
   "explanations": "Why these names, colors, fonts, and tech choices suit the idea"
 }`;
 
-
     const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const parsed = extractJsonFromText(text);
 
+    // result.response might be an object with a text() method — handle defensively
+    let text = "";
+    try {
+      // If response.text exists as a function, call it; otherwise convert to string
+     
+      if (typeof result?.response?.text === "function") {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        // call and coerce to string
+        // @ts-ignore
+        text = (await result.response.text()).toString();
+      } else {
+        text = String(result?.response ?? result ?? "");
+      }
+    } catch (e: unknown) {
+      // fallback to empty string
+      text = "";
+    }
+
+    const parsed = tryParseJson(text) as unknown;
     cache.set(idea, parsed);
 
-    return new Response(JSON.stringify(parsed), {
+    return new Response(JSON.stringify(parsed ?? {}), {
       status: 200,
       headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("/api/brand/suggest error:", err);
-    return new Response(JSON.stringify({ error: err?.message || "Internal Server Error" }), { status: 500 });
+    const message = err instanceof Error ? err.message : "Internal Server Error";
+    return new Response(JSON.stringify({ error: message }), { status: 500 });
   }
 }
