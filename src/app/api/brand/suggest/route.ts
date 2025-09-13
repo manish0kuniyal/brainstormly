@@ -16,14 +16,12 @@ const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 const cache = new Map<string, unknown>();
 
 function tryParseJson(text: string): unknown {
-  // Try direct parse
   try {
     return JSON.parse(text);
   } catch {
     /* fallthrough */
   }
 
-  // Try code block extraction
   const codeBlock = text.match(/```json\s*([\s\S]*?)```/i)?.[1];
   if (codeBlock) {
     try {
@@ -33,7 +31,6 @@ function tryParseJson(text: string): unknown {
     }
   }
 
-  // Try to locate first and last braces
   const firstBrace = text.indexOf("{");
   const lastBrace = text.lastIndexOf("}");
   if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
@@ -124,25 +121,24 @@ JSON schema example:
 
     const result = await model.generateContent(prompt);
 
-    // result.response might be an object with a text() method — handle defensively
+    // Defensive extraction of text from result.response
     let text = "";
     try {
-      // If response.text exists as a function, call it; otherwise convert to string
-     
-      if (typeof result?.response?.text === "function") {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      if (typeof (result as any)?.response?.text === "function") {
         // call and coerce to string
-        // @ts-ignore
-        text = (await result.response.text()).toString();
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+       text = (await (result as any).response.text()).toString();
       } else {
-        text = String(result?.response ?? result ?? "");
+        text = String((result as unknown) ?? "");
       }
-    } catch (e: unknown) {
-      // fallback to empty string
+    } catch (_err) {
+      // swallow and continue with empty text (parse fallback will return {})
+      // optionally log for server debugging:
+      // console.warn("parse text error", _err);
       text = "";
     }
 
-    const parsed = tryParseJson(text) as unknown;
+    const parsed = tryParseJson(text);
     cache.set(idea, parsed);
 
     return new Response(JSON.stringify(parsed ?? {}), {
