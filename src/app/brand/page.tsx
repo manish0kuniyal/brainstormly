@@ -12,6 +12,8 @@ import InvestmentCard from "./InvestmentCard";
 import SuggestionsCard from "./SuggestionsCard";
 import FontsCard from "./FontCard";
 import ThemeCard from "./ThemeCard";
+import { LayoutGrid } from "lucide-react"; // 👈 replace LayoutKanban
+
 
 type Feature = { name: string; timeEstimate?: string };
 type GeneratedOutput = {
@@ -114,7 +116,7 @@ export default function BrandPage() {
 
         {/* Grid: 1 col mobile, 3 cols on sm+ */}
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-3 gap-6 auto-rows-min items-start"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-6 auto-rows-min items-stretch"
           variants={containerVariants}
           initial="hidden"
           animate={generated ? "show" : "hidden"}
@@ -126,52 +128,35 @@ export default function BrandPage() {
             variants={cardVariants}
             whileHover={{ y: -6 }}
             layout
-            className="col-span-full sm:col-span-1"
+            className="col-span-full sm:col-span-1 h-full"
           >
-            <div className="h-full">
+            <div className="h-full flex flex-col">
               {generated?.themeName && generated?.colors ? (
-                <ThemeCard themeName={generated.themeName} colors={generated.colors} />
+                <ThemeCard
+                  themeName={generated.themeName}
+                  colors={generated.colors}
+                />
               ) : (
-                <div className="p-6 rounded-2xl shadow-lg border border-gray-800 bg-gray-900 h-full flex flex-col justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-200 mb-2">🎨 Theme</h2>
-                    <p className="text-sm text-gray-400">No theme generated yet.</p>
-                  </div>
-                  <div className="mt-4 flex gap-2">
-                    <button
-                      onClick={() => fetchData()}
-                      className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-md text-sm font-medium"
-                    >
-                      Regenerate theme
-                    </button>
-                    <button
-                      onClick={() => {
-                        // quick fallback: set a default theme locally so UI shows something
-                        setGenerated((prev) => ({
-                          ...prev,
-                          themeName: "Minimal (fallback)",
-                          colors: {
-                            primary: "#0F172A",
-                            secondary: "#6366F1",
-                            accent: "#38BDF8",
-                            background: "#0B1220",
-                            muted: "#0F172A",
-                          },
-                        }));
-                      }}
-                      className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-md text-sm text-gray-200"
-                    >
-                      Use fallback
-                    </button>
-                  </div>
+                <div className="p-6 rounded-2xl shadow-lg border border-gray-800 bg-gray-900 h-full">
+                  <h2 className="text-lg font-semibold text-gray-200 mb-2">
+                    🎨 Theme
+                  </h2>
+                  <p className="text-sm text-gray-400">
+                    No theme generated yet.
+                  </p>
                 </div>
               )}
             </div>
           </motion.div>
 
           {/* Fonts card */}
-          <motion.div variants={cardVariants} whileHover={{ y: -6 }} layout className="col-span-full sm:col-span-1">
-            <div className="h-full">
+          <motion.div
+            variants={cardVariants}
+            whileHover={{ y: -6 }}
+            layout
+            className="col-span-full sm:col-span-1 h-full"
+          >
+            <div className="h-full flex flex-col">
               {generated?.fonts ? (
                 <FontsCard primary={generated.fonts.primary} secondary={generated.fonts.secondary} />
               ) : (
@@ -184,8 +169,13 @@ export default function BrandPage() {
           </motion.div>
 
           {/* Investment card */}
-          <motion.div variants={cardVariants} whileHover={{ y: -6 }} layout className="col-span-full sm:col-span-1">
-            <div className="h-full">
+          <motion.div
+            variants={cardVariants}
+            whileHover={{ y: -6 }}
+            layout
+            className="col-span-full sm:col-span-1 h-full"
+          >
+            <div className="h-full flex flex-col">
               {generated?.businessSetup?.investmentRange ? (
                 <InvestmentCard range={generated.businessSetup.investmentRange} />
               ) : (
@@ -198,44 +188,75 @@ export default function BrandPage() {
           </motion.div>
 
           {/* ROW 2: Suggestions | Tech Stack | Competitors */}
-          <motion.div variants={cardVariants} whileHover={{ y: -6 }} layout className="col-span-full sm:col-span-1">
-            <div className="h-full">
-              {generated?.suggestions ? (
-                <SuggestionsCard suggestions={generated.suggestions} />
-              ) : (
-                <div className="p-6 rounded-2xl shadow-lg border border-gray-800 bg-gray-900 h-full">
-                  <h2 className="text-lg font-semibold text-gray-200 mb-2">💡 Suggestions</h2>
-                  <p className="text-sm text-gray-400">No suggestions yet.</p>
-                </div>
-              )}
-            </div>
-          </motion.div>
+          {/* ROW 2: Suggestions | Tech Stack | Competitors */}
+<motion.div
+  variants={cardVariants}
+  whileHover={{ y: -6 }}
+  layout
+  className="col-span-full sm:col-span-1 h-full"
+>
+  {/* outer wrapper fills cell and is a column */}
+  <div className="h-full flex flex-col">
+    {/* inner card stretches to fill available height */}
+    <div className="p-6 rounded-2xl shadow-lg border border-gray-800 bg-gray-900 h-full flex flex-col">
+      {generated?.suggestions ? (
+        // if SuggestionsCard does NOT already set its root to h-full, wrap it:
+        <div className="flex-1">
+          <SuggestionsCard suggestions={generated.suggestions} />
+        </div>
+      ) : (
+        <div className="flex-1">
+          <h2 className="text-lg font-semibold text-gray-200 mb-2">💡 Suggestions</h2>
+          <p className="text-sm text-gray-400">No suggestions yet.</p>
+        </div>
+      )}
+    </div>
+  </div>
+</motion.div>
 
-          <motion.div variants={cardVariants} whileHover={{ y: -6 }} layout className="col-span-full sm:col-span-1">
-            <div className="h-full">
-              {generated?.businessSetup?.techStack ? (
-                <TechStackCard stack={generated.businessSetup.techStack} />
-              ) : (
-                <div className="p-6 rounded-2xl shadow-lg border border-gray-800 bg-gray-900 h-full">
-                  <h2 className="text-lg font-semibold text-gray-200 mb-2">🛠️ Tech Stack</h2>
-                  <p className="text-sm text-gray-400">No tech stack suggested yet.</p>
-                </div>
-              )}
-            </div>
-          </motion.div>
+<motion.div
+  variants={cardVariants}
+  whileHover={{ y: -6 }}
+  layout
+  className="col-span-full sm:col-span-1 h-full"
+>
+  <div className="h-full flex flex-col">
+    <div className="p-6 rounded-2xl shadow-lg border border-gray-800 bg-gray-900 h-full flex flex-col">
+      {generated?.businessSetup?.techStack ? (
+        <div className="flex-1">
+          <TechStackCard stack={generated.businessSetup.techStack} />
+        </div>
+      ) : (
+        <div className="flex-1">
+          <h2 className="text-lg font-semibold text-gray-200 mb-2">🛠️ Tech Stack</h2>
+          <p className="text-sm text-gray-400">No tech stack suggested yet.</p>
+        </div>
+      )}
+    </div>
+  </div>
+</motion.div>
 
-          <motion.div variants={cardVariants} whileHover={{ y: -6 }} layout className="col-span-full sm:col-span-1">
-            <div className="h-full">
-              {generated?.competitors ? (
-                <CompetitorsCard competitors={generated.competitors} />
-              ) : (
-                <div className="p-6 rounded-2xl shadow-lg border border-gray-800 bg-gray-900 h-full">
-                  <h2 className="text-lg font-semibold text-gray-200 mb-2">🏆 Competitors</h2>
-                  <p className="text-sm text-gray-400">No competitors generated yet.</p>
-                </div>
-              )}
-            </div>
-          </motion.div>
+<motion.div
+  variants={cardVariants}
+  whileHover={{ y: -6 }}
+  layout
+  className="col-span-full sm:col-span-1 h-full"
+>
+  <div className="h-full flex flex-col">
+    <div className="p-6 rounded-2xl shadow-lg border border-gray-800 bg-gray-900 h-full flex flex-col">
+      {generated?.competitors ? (
+        <div className="flex-1">
+          <CompetitorsCard competitors={generated.competitors} />
+        </div>
+      ) : (
+        <div className="flex-1">
+          <h2 className="text-lg font-semibold text-gray-200 mb-2">🏆 Competitors</h2>
+          <p className="text-sm text-gray-400">No competitors generated yet.</p>
+        </div>
+      )}
+    </div>
+  </div>
+</motion.div>
 
           {/* ROW 3: Launch roadmap (full width) */}
           <motion.div variants={cardVariants} whileHover={{ y: -6 }} layout className="col-span-full">
@@ -251,13 +272,14 @@ export default function BrandPage() {
 
           {/* ROW 4: Kanban (full width, static wrapper) */}
           {generated?.businessSetup?.features && (
-            <div className="col-span-full">
-              <div className="p-6 rounded-2xl shadow-lg border border-gray-800 bg-gray-900">
-                <h2 className="text-xl font-bold mb-4">📋 Features Board</h2>
-                <FeatureKanban features={generated.businessSetup.features} />
-              </div>
-            </div>
-          )}
+  <div className="col-span-full p-6 rounded-2xl shadow-lg border border-gray-800 bg-gray-900">
+    <div className="flex items-center gap-2 mb-4">
+      <LayoutGrid className="h-6 w-6 text-indigo-400" />
+      <h2 className="text-xl font-bold">To Do</h2>
+    </div>
+    <FeatureKanban features={generated.businessSetup.features} />
+  </div>
+)}
 
           {/* Explanations card (full width, placed after kanban) */}
           {generated?.explanations && (

@@ -17,13 +17,12 @@ export function Hero() {
       <div className="max-w-4xl mx-auto px-4">
         {/* Bigger Heading without gradient */}
         <h1 className="text-6xl md:text-7xl font-extrabold mb-8 leading-tight text-gray-100">
-          Turn Ideas Into Reality 🚀
+        Plan Your Next Big Thing 🚀
         </h1>
 
         {/* Larger Subtext */}
         <p className="text-xl md:text-2xl mb-10 text-gray-300">
-          A modern workspace to brainstorm, craft, and shape your next big project idea.
-        </p>
+       Brainstorm ideas and map out the steps to make them happen  </p>
 
         {/* Enlarged Input + Button */}
         <div className="flex w-full max-w-3xl mx-auto mb-8 shadow-xl">

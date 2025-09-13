@@ -22,7 +22,7 @@ export default function FontsCard({
         {primary ? (
           <div>
             <p className="text-lg font-medium">{primary}</p>
-            <p className="text-sm text-gray-300">
+            <p className="text-sm text-gray-300 underline">
               The quick brown fox jumps over the lazy dog.
             </p>
           </div>
@@ -30,8 +30,8 @@ export default function FontsCard({
 
         {secondary ? (
           <div>
-            <p className="text-lg font-medium">{secondary}</p>
-            <p className="text-sm text-gray-300">
+            <p className="text-lg  font-medium">{secondary}</p>
+            <p className="text-sm text-gray-300 underline">
               The quick brown fox jumps over the lazy dog.
             </p>
           </div>

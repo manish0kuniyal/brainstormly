@@ -1,4 +1,3 @@
-// app/component/SuggestionsCard.tsx
 "use client";
 import { Sparkles } from "lucide-react";
 
@@ -8,7 +7,7 @@ export default function SuggestionsCard({
   suggestions: { name: string; motto: string }[];
 }) {
   return (
-    <div className="p-6 rounded-2xl shadow-lg border border-gray-800 bg-gray-900">
+    <div className="h-full flex flex-col p-6 rounded-2xl shadow-lg border border-gray-800 bg-gray-900">
       {/* Heading with icon */}
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="h-6 w-6 text-indigo-400" />
@@ -16,13 +15,13 @@ export default function SuggestionsCard({
       </div>
 
       {/* List of brand names + mottos */}
-      <ul className="space-y-4">
+      <ul className="flex-1 flex flex-col justify-center space-y-6">
         {suggestions.map((s, i) => (
-          <li key={i} className="flex flex-col">
-            <span className="text-lg font-semibold text-gray-100">
+          <li key={i} className="flex flex-col items-center text-center">
+            <span className="text-2xl font-bold text-gray-100">
               {s.name}
             </span>
-            <span className="text-sm italic text-gray-400 mt-1">
+            <span className="text-sm italic text-gray-400 mt-2">
               “{s.motto}”
             </span>
           </li>
