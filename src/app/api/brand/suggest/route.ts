@@ -50,16 +50,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const ideaRaw = (body?.idea ?? "").toString();
     const idea = ideaRaw.trim();
-    const language = body?.language ?? "en";
-    const styleHints = Array.isArray(body?.styleHints) ? body.styleHints : [];
+    const language = typeof body?.language === "string" ? body.language : "en";
+    const styleHints = Array.isArray(body?.styleHints) ? body.styleHints.filter(Boolean) : [];
 
     if (!idea) {
       return new Response(JSON.stringify({ error: "idea is required" }), { status: 400 });
     }
 
     if (cache.has(idea)) {
-      const cached = cache.get(idea) as unknown;
-      return new Response(JSON.stringify(cached), {
+      const cached = cache.get(idea);
+      return new Response(JSON.stringify(cached ?? {}), {
         headers: { "Cache-Control": "no-store", "Content-Type": "application/json" },
       });
     }
@@ -121,20 +121,26 @@ JSON schema example:
 
     const result = await model.generateContent(prompt);
 
-    // Defensive extraction of text from result.response
+    // Defensive extraction of text from result.response without using `any`
     let text = "";
     try {
-      if (typeof (result as any)?.response?.text === "function") {
+      const maybeResponse = result as unknown as { response?: unknown };
+
+      // Narrow response to object that may have a text() function
+      const resp = maybeResponse.response as { text?: unknown } | undefined;
+      if (resp && typeof resp.text === "function") {
         // call and coerce to string
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-       text = (await (result as any).response.text()).toString();
+        // resp.text is runtime-checked as function; TS needs an assertion to call it
+        // we expect it returns Promise<unknown>
+       const raw = await (resp.text as () => Promise<unknown>)();
+text = String(raw ?? "");
       } else {
-        text = String((result as unknown) ?? "");
+        text = String(result ?? "");
       }
-    } catch (_err) {
-      // swallow and continue with empty text (parse fallback will return {})
-      // optionally log for server debugging:
-      // console.warn("parse text error", _err);
+    } catch (caught) {
+      // log a friendly message for server-side debugging, keep parsing fallback
+      const msg = caught instanceof Error ? caught.message : String(caught ?? "");
+      console.warn("Failed to extract response text for brand.suggest:", msg);
       text = "";
     }
 
@@ -146,7 +152,7 @@ JSON schema example:
       headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
   } catch (err: unknown) {
-    console.error("/api/brand/suggest error:", err);
+   console.error("/api/brand/suggest error:", err);
     const message = err instanceof Error ? err.message : "Internal Server Error";
     return new Response(JSON.stringify({ error: message }), { status: 500 });
   }

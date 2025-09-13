@@ -1,4 +1,6 @@
 "use client";
+export const dynamic = "force-dynamic";
+
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import FeatureKanban from "../component/FeatureKanban";
@@ -76,8 +78,9 @@ export default function BrandPage() {
       const json = await r.json();
       if (json.error) throw new Error(json.error);
       setGenerated(json);
-    } catch (e: any) {
-      setErr(e?.message || "Error");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e ?? "Error");
+      setErr(message);
     } finally {
       setLoading(false);
     }
